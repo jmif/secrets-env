@@ -4,18 +4,20 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 const DEFAULT_OPTIONS = {
-    secretDirs: [ '/run/secrets' ],
+    path: undefined,
     fileEncoding: 'utf8',
-
-    dotenvEnvironments: [ 'development' ],
-    directoryEnvironments: [ 'production' ],
 
     // Must have info, warn, error
     logger: console,
 
-    dotenvPath: undefined,
     dotenvDebug: false
 };
+
+function expandOptions(userOptions) {
+    const opts = Object.assign(DEFAULT_OPTIONS, userOptions);
+
+    return opts;
+}
 
 function loadSecretDir(dir, opts) {
     opts.logger.info(`Loading secrets from ${dir}`);
@@ -37,7 +39,15 @@ function loadSecretDir(dir, opts) {
     });
 }
 
-function loadSecretDirectories(opts) {
+function directoryEntry(userOptions) {
+    const opts = expandAndValidateOptions(userOptions);
+
+    if (typeof opts.path !== 'string' || opts.path.length === 0) {
+        throw new Error('path must be specified');
+    }
+
+    opts.logger.info('Loading secret directories');
+
     opts.secretDirs.forEach((secretDir) => {
         if (!fs.existsSync(secretDir)) {
             throw new Error(`${secretDir} does not exist`);
@@ -47,27 +57,17 @@ function loadSecretDirectories(opts) {
     });
 }
 
-function secretsEnv(userOptions) {
-    const opts = Object.assign(DEFAULT_OPTIONS, userOptions);
+function dotenvEntry(userOptions) {
+    const opts = expandAndValidateOptions(userOptions);
 
-    if (!Array.isArray(opts.secretDirs)) {
-        throw new Error('secretDirs must be array');
-    }
+    opts.logger.info('Loading .env');
 
-    const NODE_ENV = process.env.NODE_ENV;
-    if (opts.directoryEnvironments.indexOf(NODE_ENV) !== -1) {
-        opts.logger.info('Loading secret directories');
-        loadSecretDirectories(opts);
-    }
-
-    if (opts.dotenvEnvironments.indexOf(NODE_ENV) !== -1) {
-        opts.logger.info('Loading .env');
-        dotenv.config({
-            encoding: opts.fileEncoding,
-            debug: opts.deotenvDebug,
-            path: opts.dotenvPath
-        });
-    }
+    dotenv.config({
+        path: opts.path,
+        encoding: opts.fileEncoding,
+        debug: opts.deotenvDebug
+    });
 }
 
-module.exports = secretsEnv;
+module.exports.directory = directoryEntry;
+module.exports.dotenv = dotenvEntry;
