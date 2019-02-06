@@ -1,0 +1,12 @@
+{
+  "name": "secrets-env",
+  "version": "0.0.1",
+  "description": "Loads environment variables from a secrets directory or .env file",
+  "main": "index.js",
+  "repository": "https://github.com/jmif/secrets-env",
+  "author": "jmif",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^6.2.0"
+  }
+}
