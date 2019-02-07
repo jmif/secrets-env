@@ -26,7 +26,7 @@ function loadSecretDir(dir, opts) {
     secrets.forEach((secretFile) => {
         const key = secretFile;
         const secret = fs
-            .readFileSync(path.join(opts.secretsDir, secretFile), opts.fileEncoding)
+            .readFileSync(path.join(opts.path, secretFile), opts.fileEncoding)
             .toString()
             .trim();
 
@@ -35,12 +35,16 @@ function loadSecretDir(dir, opts) {
             return;
         }
 
-        process.env[KEY] = secret;
+        process.env[key] = secret;
     });
 }
 
 function directoryEntry(userOptions) {
-    const opts = expandAndValidateOptions(userOptions);
+    if (typeof userOptions === 'string') {
+        userOptions = { path: userOptions };
+    }
+
+    const opts = expandOptions(userOptions);
 
     if (typeof opts.path !== 'string' || opts.path.length === 0) {
         throw new Error('path must be specified');
@@ -48,17 +52,15 @@ function directoryEntry(userOptions) {
 
     opts.logger.info('Loading secret directories');
 
-    opts.secretDirs.forEach((secretDir) => {
-        if (!fs.existsSync(secretDir)) {
-            throw new Error(`${secretDir} does not exist`);
-        }
+    if (!fs.existsSync(opts.path)) {
+        throw new Error(`${opts.path} does not exist`);
+    }
 
-        loadSecretDir(secretDir, opts);
-    });
+    loadSecretDir(opts.path, opts);
 }
 
 function dotenvEntry(userOptions) {
-    const opts = expandAndValidateOptions(userOptions);
+    const opts = expandOptions(userOptions);
 
     opts.logger.info('Loading .env');
 
