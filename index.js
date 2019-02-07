@@ -22,11 +22,15 @@ function expandOptions(userOptions) {
 function loadSecretDir(dir, opts) {
     opts.logger.info(`Loading secrets from ${dir}`);
 
-    const secrets = fs.readdirSync(dir);
+    const secrets = fs.readdirSync(dir, { withFileTypes: true });
     secrets.forEach((secretFile) => {
-        const key = secretFile;
+        if (secretFile.isDirectory()) {
+            return;
+        }
+
+        const key = secretFile.name;
         const secret = fs
-            .readFileSync(path.join(opts.path, secretFile), opts.fileEncoding)
+            .readFileSync(path.join(opts.path, key), opts.fileEncoding)
             .toString()
             .trim();
 
