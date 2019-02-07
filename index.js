@@ -22,15 +22,20 @@ function expandOptions(userOptions) {
 function loadSecretDir(dir, opts) {
     opts.logger.info(`Loading secrets from ${dir}`);
 
-    const secrets = fs.readdirSync(dir, { withFileTypes: true });
-    secrets.forEach((secretFile) => {
-        if (secretFile.isDirectory()) {
+    const secretFiles = fs.readdirSync(dir);
+    secretFiles.forEach((secretFile) => {
+        const secretFilePath = path.join(opts.path, secretFile);
+        const key = secretFile;
+
+        opts.logger.debug(`Loading ${secretFilePath}`);
+
+        if (fs.statSync(secretFilePath).isDirectory()) {
+            opts.logger.debug(`Skipping ${key} - directory`);
             return;
         }
 
-        const key = secretFile.name;
         const secret = fs
-            .readFileSync(path.join(opts.path, key), opts.fileEncoding)
+            .readFileSync(secretFilePath, opts.fileEncoding)
             .toString()
             .trim();
 
@@ -40,6 +45,8 @@ function loadSecretDir(dir, opts) {
         }
 
         process.env[key] = secret;
+
+        opts.logger.debug(`Loaded ${key}`);
     });
 }
 
@@ -53,8 +60,6 @@ function directoryEntry(userOptions) {
     if (typeof opts.path !== 'string' || opts.path.length === 0) {
         throw new Error('path must be specified');
     }
-
-    opts.logger.info('Loading secret directories');
 
     if (!fs.existsSync(opts.path)) {
         throw new Error(`${opts.path} does not exist`);
